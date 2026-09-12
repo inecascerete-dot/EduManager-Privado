@@ -1,0 +1,131 @@
+==================================================================
+        DICA SCHOOL MANAGER - MODELO DE BASE DE DATOS (V2)
+==================================================================
+Descripción: Arquitectura relacional, universal y multi-colegio (SaaS)
+para la gestión institucional, matrículas y personal educativo.
+
+------------------------------------------------------------------
+1. TABLA: instituciones
+------------------------------------------------------------------
+Descripción: Datos principales de cada institución o colegio del sistema.
+Campos:
+  - id_institucion (Texto - Llave Primaria, ej: 'INST-DICA')
+  - nit_dane (Texto - Identificación jurídica o código oficial)
+  - nombre_institucion (Texto - ej: 'I.E. Cañito de Los Sábalos')
+  - resolucion_aprobacion (Texto Largo - Para actas y certificados)
+  - mision (Texto Largo)
+  - vision (Texto Largo)
+  - logo_url (Texto - Ruta o enlace al escudo/imagen)
+  - direccion_principal (Texto)
+  - telefono_principal (Texto)
+
+------------------------------------------------------------------
+2. TABLA: sedes
+------------------------------------------------------------------
+Descripción: Sedes físicas que pertenecen a una institución.
+Campos:
+  - id_sede (Texto - Llave Primaria, ej: 'SED-PRINCIPAL')
+  - id_institucion (Texto - Llave Foránea -> instituciones)
+  - nombre_sede (Texto - ej: 'Sede Central', 'Sede Las Flores')
+  - direccion (Texto)
+  - telefono_sede (Texto)
+
+------------------------------------------------------------------
+3. TABLA: jornadas
+------------------------------------------------------------------
+Descripción: Jornadas horarias que ofrece cada institución.
+Campos:
+  - id_jornada (Texto - Llave Primaria, ej: 'JOR-MANANA')
+  - id_institucion (Texto - Llave Foránea -> instituciones)
+  - nombre_jornada (Texto - ej: 'Mañana', 'Tarde', 'Única', 'Sabatina')
+
+------------------------------------------------------------------
+4. TABLA: grados
+------------------------------------------------------------------
+Descripción: Niveles educativos generales fijos.
+Campos:
+  - id_grado (Texto - Llave Primaria, ej: 'GRA-06')
+  - nombre_grado (Texto - ej: 'Sexto', 'Transición')
+
+------------------------------------------------------------------
+5. TABLA: cursos
+------------------------------------------------------------------
+Descripción: Las aulas o grupos reales creados para un año específico.
+Campos:
+  - id_curso (Texto - Llave Primaria, ej: 'CUR-2026-601')
+  - id_grado (Texto - Llave Foránea -> grados)
+  - grupo (Texto - ej: '01', '02', 'A')
+  - ano_vigente (Número entero - ej: 2026)
+  - id_sede (Texto - Llave Foránea -> sedes)
+  - id_jornada (Texto - Llave Foránea -> jornadas)
+
+------------------------------------------------------------------
+6. TABLA: personal
+------------------------------------------------------------------
+Descripción: Planta docente, directiva y administrativa del sistema.
+Campos:
+  - id_personal (Texto - Llave Primaria, ej: 'DOC-1020')
+  - numero_documento (Texto - Cédula de ciudadanía)
+  - nombres (Texto)
+  - apellidos (Texto)
+  - telefono (Texto)
+  - correo_electronico (Texto)
+  - rol (Texto - Rector, Coordinador, Docente, Secretaria)
+  - escalafon_grado (Texto - Opcional, ej: '2AM', '14')
+  - decreto_nombramiento (Texto - Opcional, ej: '1278', '2277')
+  - tipo_vinculacion (Texto - Opcional, ej: 'Propiedad', 'Provisional', 'Término Fijo')
+  - foto_url (Texto - Enlace a la imagen de perfil)
+  - estado_laboral (Texto - Activo, Inactivo)
+  - fecha_estado_laboral (Fecha - Cuándo inició el estado actual)
+
+------------------------------------------------------------------
+7. TABLA: direcciones_grupo
+------------------------------------------------------------------
+Descripción: Asignación histórica e institucional de directores por año.
+Campos:
+  - id_direccion (Número - SERIAL / Llave Primaria Autoincrementable)
+  - id_curso (Texto - Llave Foránea -> cursos)
+  - id_director_principal (Texto - Llave Foránea -> personal)
+  - id_director_auxiliar (Texto - Opcional - Llave Foránea -> personal)
+  - ano_lectivo (Número entero - ej: 2026)
+
+------------------------------------------------------------------
+8. TABLA: estudiantes
+------------------------------------------------------------------
+Descripción: Datos maestros e inmutables del alumno.
+Campos:
+  - id_estudiante (Texto - Llave Primaria, ej: 'EST-202')
+  - numero_documento (Texto)
+  - tipo_documento (Texto - TI, RC, CC, NES)
+  - nombres (Texto)
+  - apellidos (Texto)
+  - fecha_nacimiento (Fecha)
+  - genero (Texto)
+
+------------------------------------------------------------------
+9. TABLA: acudientes
+------------------------------------------------------------------
+Descripción: Información de contacto del adulto responsable.
+Campos:
+  - id_acudiente (Texto - Llave Primaria, ej: 'ACU-101')
+  - numero_documento (Texto)
+  - nombres (Texto)
+  - apellidos (Texto)
+  - parentesco (Texto - Madre, Padre, Tío, Apoderado)
+  - telefono (Texto)
+  - correo_electronico (Texto)
+
+------------------------------------------------------------------
+10. TABLA: matriculas
+------------------------------------------------------------------
+Descripción: El núcleo del sistema. Vincula al alumno con su realidad anual.
+Campos:
+  - id_matricula (Número - SERIAL / Llave Primaria Autoincrementable)
+  - id_estudiante (Texto - Llave Foránea -> estudiantes)
+  - id_acudiente (Texto - Llave Foránea -> acudientes)
+  - id_curso (Texto - Llave Foránea -> cursos)
+  - id_institucion (Texto - Llave Foránea -> instituciones)
+  - num_folio (Texto - Número de registro físico)
+  - estado_matricula (Texto - Prematriculado, Matriculado, Retirado)
+  - fecha_registro (Fecha - Registro automático del sistema)
+==================================================================

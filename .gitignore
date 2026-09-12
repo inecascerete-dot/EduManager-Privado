@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entornos virtuales
+.python-version
+.venv/
+venv/
+env/
+ENV/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+*.secret
+*.secret.*
+secrets*.toml
+
+# Streamlit
+.streamlit/*
+!.streamlit/config.toml
+!.streamlit/secrets.toml.example
+
+# Credenciales de Google Drive / OAuth
+backend/credenciales/
+backend/oauth/
+
+# Datos privados y archivos personales
+attached_assets/
+*.docx
+*.pdf
+backend/Datos/
+assets/*_foto.*
+assets/*_Foto.*
+assets/EST-*.*
+assets/PERS-*.*
+assets/WhatsApp*.*
+assets/**/foto.*
+assets/**/foto_*/
+
+# VS Code
+.vscode/
+
+# Metadatos y prototipos locales del entorno de trabajo
+.agents/
+.local/
+artifacts/
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+~$*
+*.log
+Thumbs.db
+.DS_Store
+
+# Replit
+.local/
+.replit
+replit.nix
+
+# Respaldos
+*.dump
+*.bak
+*.backup
+*_backup.*
+restore_list.txt
+
+# Pruebas locales y diagnósticos que pueden contener datos de conexión
+prueba_supabase.py
+probar_drive.py
+prueba.txt
+test_puerto.py
+
+.git_anterior/
