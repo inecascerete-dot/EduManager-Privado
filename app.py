@@ -118,6 +118,7 @@ try:
     web_datos_para_boletin,
     web_obtener_promedios_periodo,
     web_obtener_boletin_datos_bulk,
+    obtener_conexion_directa,
     )
 except ImportError as e:
     st.error(f"Error crítico al importar: {e}")
@@ -2999,16 +3000,19 @@ elif opcion == "📊 Notas":
     # Obtenemos el id_grado del curso seleccionado de la tabla cursos
     cache_grado_key = f"grado_de_curso_{id_curso_sel}"
     if cache_grado_key not in st.session_state:
-        import psycopg2 as _pg, os as _os
+        _con = obtener_conexion_directa()
         try:
-            _con = _pg.connect(_os.environ["DATABASE_URL"])
+            if not _con:
+                raise RuntimeError("No fue posible conectar con PostgreSQL")
             with _con.cursor() as _cur:
                 _cur.execute("SELECT id_grado FROM cursos WHERE id_curso=%s;", (id_curso_sel,))
                 _row = _cur.fetchone()
                 st.session_state[cache_grado_key] = _row[0] if _row else None
-            _con.close()
         except Exception:
             st.session_state[cache_grado_key] = None
+        finally:
+            if _con:
+                _con.close()
 
     id_grado_real = st.session_state[cache_grado_key]
     plan_grado = web_obtener_plan_estudio(id_grado_real) if id_grado_real else []
