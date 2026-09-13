@@ -73,6 +73,7 @@ try:
    
     web_obtener_cursos,
     web_buscar_personal_dinamico,
+    obtener_siguiente_codigo_personal,
     web_registrar_personal,
     web_obtener_grados,
     web_obtener_grados_completo,
@@ -1343,7 +1344,11 @@ elif opcion == "🆕 Registrar Personal":
     st.markdown("### 📋 1. Datos de Identificación y Perfil")
     col1, col2 = st.columns(2)
     with col1:
-        per_id = st.text_input("Código Interno Único (Ej: PERS-005)*")
+        per_id = st.text_input(
+            "Código Interno Único (Ej: PERS-0001)*",
+            value=obtener_siguiente_codigo_personal(),
+            disabled=True
+        )
         per_nombres = st.text_input("Nombres Completos*")
         per_rol = st.selectbox("Cargo / Rol Institucional*", ["Docente de Aula", "Coordinador", "Rector", "Orientador", "Administrativo"])
     with col2:

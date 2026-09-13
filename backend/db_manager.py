@@ -175,6 +175,35 @@ def web_obtener_cursos():
 
 
 
+def obtener_siguiente_codigo_personal():
+    """Genera el siguiente código consecutivo con formato PERS-0001."""
+    con = obtener_conexion_directa()
+    if not con:
+        return "PERS-0001"
+
+    try:
+        with con.cursor() as cursor:
+            cursor.execute("""
+                SELECT COALESCE(
+                    MAX(
+                        CAST(
+                            SUBSTRING(id_personal FROM '^PERS-([0-9]+)$')
+                            AS INTEGER
+                        )
+                    ),
+                    0
+                ) + 1
+                FROM personal
+                WHERE id_personal ~* '^PERS-[0-9]+$';
+            """)
+            consecutivo = cursor.fetchone()[0]
+            return f"PERS-{consecutivo:04d}"
+    except Exception:
+        return "PERS-0001"
+    finally:
+        con.close()
+
+
 def web_registrar_personal(
         id_p, num_doc, nombres, apellidos, telefono, correo,
         rol, escalafon, decreto, vinculacion, estado, f_estado, foto_url):

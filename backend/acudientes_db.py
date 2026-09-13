@@ -409,7 +409,7 @@ def obtener_siguiente_codigo_acudiente():
     con = obtener_conexion_directa()
 
     if not con:
-        return "ACU-001"
+        return "ACU-0001"
 
     try:
 
@@ -431,11 +431,11 @@ def obtener_siguiente_codigo_acudiente():
 
             consecutivo = cur.fetchone()[0]
 
-            return f"ACU-{consecutivo:03d}"
+            return f"ACU-{consecutivo:04d}"
 
     except Exception:
 
-        return "ACU-001"
+        return "ACU-0001"
 
     finally:
 
