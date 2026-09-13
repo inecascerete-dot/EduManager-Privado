@@ -143,15 +143,12 @@ if st.session_state.usuario is None:
 
     st.subheader("Inicio de sesión")
 
-    usuario = st.text_input("Usuario")
-
-    password = st.text_input(
-        "Contraseña",
-        type="password"
-    )
-
-    boton_ingresar = st.button("Ingresar")
-    activar_navegacion_enter(["Usuario", "Contraseña"], boton_final="Ingresar")
+    # Un formulario nativo garantiza que Enter y el clic envíen los valores
+    # actualizados de usuario y contraseña en el mismo momento.
+    with st.form("formulario_inicio_sesion"):
+        usuario = st.text_input("Usuario")
+        password = st.text_input("Contraseña", type="password")
+        boton_ingresar = st.form_submit_button("Ingresar")
 
     if boton_ingresar:
 
