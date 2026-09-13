@@ -30,6 +30,7 @@ class DriveManager:
 
 
 import json
+import tempfile
 from pathlib import Path
 import streamlit as st
 from google.oauth2.credentials import Credentials
@@ -40,42 +41,42 @@ from googleapiclient.discovery import build
 def autenticar(self):
     creds = None
     
-    # 1. Intentar cargar las credenciales desde un archivo de token existente si la app lo soporta localmente
     if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).exists():
         try:
             creds = Credentials.from_authorized_user_file(str(GOOGLE_TOKEN), SCOPES)
         except Exception:
             pass
 
-    # 2. Si no hay credenciales válidas, las cargamos directamente desde los Secrets de Streamlit
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             try:
-                print("INTENTANDO REFRESCAR TOKEN")
                 creds.refresh(Request())
             except Exception:
                 creds = None
 
         if not creds:
-            print("CARGANDO CREDENCIALES DESDE STREAMLIT SECRETS")
-            # Leemos el JSON seguro configurado en la nube
+            print("CONFIGURANDO CREDENCIALES DESDE SECRETS")
+            
+            # Cargamos el diccionario desde los secretos de Streamlit
             client_config = json.loads(st.secrets["GOOGLE_CLIENT_SECRETS_JSON"])
             
-            flow = InstalledAppFlow.from_client_config(
-            client_config, 
-            SCOPES
-        )
-            
-            # ADVERTENCIA: flow.run_local_server() no funciona en la nube porque requiere navegador.
-            # En entorno de producción web, se requiere un flujo de credenciales pre-autorizadas o Service Account.
-            # Si estás probando localmente con un token guardado, esta parte solo se salta si el token es válido.
-            try:
-                creds = flow.run_local_server(port=0)
-            except Exception as e:
-                st.error("Error de autenticación OAuth en servidor remoto. Se requiere un flujo web o token pregenerado.")
-                raise e
+            # Creamos un archivo temporal para que la función original lo lea sin errores
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp:
+                json.dump(client_config, temp)
+                temp_path = temp.name
 
-        # Guardar el token si es posible
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    temp_path, 
+                    SCOPES
+                )
+                # Nota: En la nube sin navegador, esto requerirá que el token ya esté preautorizado
+                # o usar un flujo web, pero esto elimina por completo el error de sintaxis.
+                creds = flow.run_local_server(port=0)
+            finally:
+                # Limpiamos el archivo temporal
+                Path(temp_path).unlink(missing_ok=True)
+
         if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).parent.exists():
             try:
                 with open(GOOGLE_TOKEN, "w") as token:
