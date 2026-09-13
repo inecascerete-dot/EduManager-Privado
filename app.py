@@ -1200,6 +1200,8 @@ elif opcion == "🔎 Consultar Personal":
 # ==========================================
 
 # --- 🆕 PANTALLA: REGISTRAR ESTUDIANTE ---
+elif opcion == "🆕 Registrar Estudiante":
+    mostrar_busqueda_estudiantes()
 
 
 # --- 🆕 PANTALLA: REGISTRAR ACUDIENTE ---
