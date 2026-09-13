@@ -29,45 +29,65 @@ class DriveManager:
         self.autenticar()
 
 
-    def autenticar(self):
+import json
+from pathlib import Path
+import streamlit as st
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 
-        creds = None
-        print("TOKEN =", GOOGLE_TOKEN)
-        print("EXISTE =", Path(GOOGLE_TOKEN).exists())
+def autenticar(self):
+    creds = None
+    
+    # 1. Intentar cargar las credenciales desde un archivo de token existente si la app lo soporta localmente
+    if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).exists():
+        try:
+            creds = Credentials.from_authorized_user_file(str(GOOGLE_TOKEN), SCOPES)
+        except Exception:
+            pass
 
-        if Path(GOOGLE_TOKEN).exists():
+    # 2. Si no hay credenciales válidas, las cargamos directamente desde los Secrets de Streamlit
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                print("INTENTANDO REFRESCAR TOKEN")
+                creds.refresh(Request())
+            except Exception:
+                creds = None
 
-            creds = Credentials.from_authorized_user_file(
-                str(GOOGLE_TOKEN),
+        if not creds:
+            print("CARGANDO CREDENCIALES DESDE STREAMLIT SECRETS")
+            # Leemos el JSON seguro configurado en la nube
+            client_config = json.loads(st.secrets["GOOGLE_CLIENT_SECRETS_JSON"])
+            
+            flow = InstalledAppFlow.from_client_secrets_config(
+                client_config, 
                 SCOPES
             )
-
-        if not creds or not creds.valid:
-
-            if creds and creds.expired and creds.refresh_token:
-                print("INTENTANDO REFRESCAR TOKEN")
-
-                creds.refresh(Request())
-
-            else:
-                print("ENTRANDO A NUEVA AUTENTICACIÓN")
-
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(GOOGLE_DESKTOP_CLIENT),
-                    SCOPES
-                )
-
+            
+            # ADVERTENCIA: flow.run_local_server() no funciona en la nube porque requiere navegador.
+            # En entorno de producción web, se requiere un flujo de credenciales pre-autorizadas o Service Account.
+            # Si estás probando localmente con un token guardado, esta parte solo se salta si el token es válido.
+            try:
                 creds = flow.run_local_server(port=0)
+            except Exception as e:
+                st.error("Error de autenticación OAuth en servidor remoto. Se requiere un flujo web o token pregenerado.")
+                raise e
 
-            with open(GOOGLE_TOKEN, "w") as token:
-                token.write(creds.to_json())
+        # Guardar el token si es posible
+        if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).parent.exists():
+            try:
+                with open(GOOGLE_TOKEN, "w") as token:
+                    token.write(creds.to_json())
+            except Exception:
+                pass
 
-        self.service = build(
-            "drive",
-            "v3",
-            credentials=creds
-        )
-
+    self.service = build(
+        "drive",
+        "v3",
+        credentials=creds
+    )
 
     def subir_archivo(self, archivo_local, nombre_archivo, carpeta_id=None):
 
