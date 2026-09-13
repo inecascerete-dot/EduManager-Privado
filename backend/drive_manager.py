@@ -41,54 +41,27 @@ from googleapiclient.discovery import build
 def autenticar(self):
     creds = None
     
-    if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).exists():
+    # 1. Intentar cargar el token desde los Secrets de Streamlit Cloud
+    if "GOOGLE_TOKEN_JSON" in st.secrets:
         try:
-            creds = Credentials.from_authorized_user_file(str(GOOGLE_TOKEN), SCOPES)
+            token_info = json.loads(st.secrets["GOOGLE_TOKEN_JSON"])
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except Exception as e:
+            print("Error cargando token de secrets:", e)
+
+    # 2. Refrescar el token si expiró
+    if creds and creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
         except Exception:
-            pass
+            creds = None
 
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            try:
-                creds.refresh(Request())
-            except Exception:
-                creds = None
+        st.error("⚠️ Falta configurar GOOGLE_TOKEN_JSON en los Secrets de Streamlit Cloud.")
+        raise ValueError("No se encontraron credenciales válidas para Google Drive.")
 
-        if not creds:
-            print("CONFIGURANDO CREDENCIALES DESDE SECRETS")
-            
-            # Cargamos el diccionario desde los secretos de Streamlit
-            client_config = json.loads(st.secrets["GOOGLE_CLIENT_SECRETS_JSON"])
-            
-            # Creamos un archivo temporal para que la función original lo lea sin errores
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp:
-                json.dump(client_config, temp)
-                temp_path = temp.name
-
-            try:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    temp_path, 
-                    SCOPES
-                )
-                # Nota: En la nube sin navegador, esto requerirá que el token ya esté preautorizado
-                # o usar un flujo web, pero esto elimina por completo el error de sintaxis.
-                creds = flow.run_local_server(port=0)
-            finally:
-                # Limpiamos el archivo temporal
-                Path(temp_path).unlink(missing_ok=True)
-
-        if GOOGLE_TOKEN and Path(GOOGLE_TOKEN).parent.exists():
-            try:
-                with open(GOOGLE_TOKEN, "w") as token:
-                    token.write(creds.to_json())
-            except Exception:
-                pass
-
-    self.service = build(
-        "drive",
-        "v3",
-        credentials=creds
-    )
+    self.service = build("drive", "v3", credentials=creds)
+    
 
     def subir_archivo(self, archivo_local, nombre_archivo, carpeta_id=None):
 
