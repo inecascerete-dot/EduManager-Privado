@@ -44,6 +44,11 @@ from backend.matriculas_db import (
     web_obtener_matriculas_activas_curso
 )
 
+st.set_page_config(
+    page_title="EduManager",
+    page_icon="assets/edumanager_icon.svg",
+)
+
 # ==========================================
 # SESIÓN DE USUARIO
 # ==========================================
@@ -138,9 +143,39 @@ os.environ["LANG"] = "C.UTF-8"
 
 if st.session_state.usuario is None:
 
-    st.title("🔐 EDUMANAGER")
+    st.markdown("""
+    <style>
+    .login-card {
+        max-width: 520px;
+        margin: 1.5rem auto 0 auto;
+        padding: 1.5rem 2rem 1.25rem 2rem;
+        border: 1px solid rgba(28, 120, 168, .18);
+        border-radius: 18px;
+        background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,248,253,.96));
+        box-shadow: 0 12px 32px rgba(18,59,112,.10);
+        text-align: center;
+    }
+    .login-title {
+        color: #123B70;
+        font-size: 2rem;
+        font-weight: 750;
+        letter-spacing: .02em;
+        margin: .25rem 0 .15rem 0;
+    }
+    .login-subtitle {
+        color: #52718A;
+        margin: 0 0 1rem 0;
+    }
+    </style>
+    <div class="login-card">
+        <div class="login-title">EduManager</div>
+        <div class="login-subtitle">Gestión educativa institucional</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.subheader("Inicio de sesión")
+    col_login_1, col_login_2, col_login_3 = st.columns([1, 2, 1])
+    with col_login_2:
+        st.image("assets/edumanager_icon.svg", width=112)
 
     # Un formulario nativo garantiza que Enter y el clic envíen los valores
     # actualizados de usuario y contraseña en el mismo momento.
