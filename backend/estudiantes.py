@@ -13,6 +13,7 @@ import tempfile
 import requests
 import re
 from io import BytesIO
+import streamlit.components.v1 as components
 from streamlit_searchbox import st_searchbox
 from backend.matriculas_db import web_consultar_matricula
 from backend.acudientes_db import web_consultar_acudiente
@@ -36,6 +37,88 @@ from backend.catalogos_db import (
 )
 
 from backend.utils import obtener_url_o_ruta_imagen
+
+
+def _activar_enter_formulario_estudiante():
+    """Permite avanzar con Enter por el orden del formulario de estudiante."""
+    components.html(
+        """
+        <script>
+        (() => {
+            const labels = [
+                "Tipo de Documento*",
+                "Número de Documento*",
+                "Departamento de Expedición (Filtro)*",
+                "Municipio de Expedición*",
+                "Primer Apellido*",
+                "Segundo Apellido (Opcional)",
+                "Primer Nombre*",
+                "Segundo Nombre (Opcional)",
+                "Fecha de Nacimiento",
+                "Dirección de Residencia*",
+                "Estrato Socioeconómico*",
+                "Género*",
+                "Teléfono de Contacto*",
+                "Departamento*",
+                "Municipio*",
+                "Barrio / Vereda*",
+                "Grupo Sanguíneo y RH*",
+                "Grupo Sisbén (Ej: A1, B3, C2)*",
+                "EPS Asignada*",
+                "Caracterización Poblacional*"
+            ];
+
+            const normalizar = (texto) => (texto || "")
+                .replace(/\\s+/g, " ")
+                .trim();
+
+            const buscarCampo = (label) => Array.from(
+                window.parent.document.querySelectorAll(
+                    "input[aria-label], textarea[aria-label], [role='combobox'][aria-label]"
+                )
+            ).find((elemento) =>
+                normalizar(elemento.getAttribute("aria-label")) === normalizar(label)
+            );
+
+            const instalar = () => {
+                labels.forEach((label, index) => {
+                    const input = buscarCampo(label);
+
+                    if (!input || input.dataset.enterNombresInstalado === "1") {
+                        return;
+                    }
+
+                    input.dataset.enterNombresInstalado = "1";
+                    input.addEventListener("keydown", (evento) => {
+                        if (evento.key !== "Enter" || index >= labels.length - 1) {
+                            return;
+                        }
+
+                        evento.preventDefault();
+                        evento.stopPropagation();
+
+                        const siguiente = buscarCampo(labels[index + 1]);
+
+                        if (siguiente) {
+                            siguiente.focus();
+                            siguiente.scrollIntoView({block: "center", behavior: "smooth"});
+                        }
+                    }, true);
+                });
+            };
+
+            instalar();
+            const observador = new MutationObserver(instalar);
+            observador.observe(window.parent.document.body, {
+                childList: true,
+                subtree: true
+            });
+            window.setTimeout(() => observador.disconnect(), 30000);
+        })();
+        </script>
+        """,
+        height=0,
+    )
 
 def limpiar_formulario_estudiante():
     """Limpia todos los campos del formulario y el buscador asignando valores vacíos a sus keys de sesión"""
@@ -391,6 +474,9 @@ def mostrar_formulario_estudiante(modo="nuevo"):
         st.text_input("Primer Nombre*", key="reg_est_p_nom", disabled=not edit_mode)
     with col_ape2:
         st.text_input("Segundo Nombre (Opcional)", key="reg_est_s_nom", disabled=not edit_mode) 
+
+    if edit_mode:
+        _activar_enter_formulario_estudiante()
 
     # === BLOQUE 2: SOCIODEMOGRÁFICA ===
 
