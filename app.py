@@ -19,6 +19,8 @@ from backend.estudiantes import (
     mostrar_busqueda_estudiantes,
     mostrar_formulario_estudiante,
 )
+from backend.drive_manager import DriveManager
+from backend.utils import obtener_url_o_ruta_imagen
 
 from backend.institucion_db import(
         web_obtener_institucion,
@@ -590,15 +592,22 @@ _imagen = _inst.get("escudo_url")
 if not _imagen:
     _imagen = _inst.get("logo_url")
 
-_imagen_full = (
-    os.path.join("assets", _imagen)
-    if _imagen else ""
-)
+_imagen_full = obtener_url_o_ruta_imagen(_imagen)
 
 
 _loc = f"{_municipio}{', ' + _depto if _depto else ''}"
 
-if _imagen_full and os.path.exists(_imagen_full):
+if _imagen_full and _imagen_full.startswith(("http://", "https://")):
+    _logo_html = f"""
+        <img src="{_imagen_full}"
+             style="
+                 width:90px;
+                 height:90px;
+                 object-fit:contain;
+                 margin-bottom:10px;
+             ">
+    """
+elif _imagen_full and os.path.exists(_imagen_full):
     import base64
 
     with open(_imagen_full, "rb") as f:
@@ -1280,8 +1289,9 @@ elif opcion == "⚙️ Configuración":
         st.markdown("**Logo principal**")
         st.caption("Aparece en el menú lateral y en el encabezado de los boletines.")
         logo_actual = inst.get("logo_url", "") or ""
-        if logo_actual and os.path.exists(os.path.join("assets", logo_actual)):
-            st.image(os.path.join("assets", logo_actual), width=140, caption="Logo actual")
+        logo_actual_src = obtener_url_o_ruta_imagen(logo_actual)
+        if logo_actual_src:
+            st.image(logo_actual_src, width=140, caption="Logo actual")
         else:
             st.caption("Sin logo cargado actualmente.")
         archivo_logo = st.file_uploader("Subir nuevo logo", type=["jpg", "jpeg", "png"],
@@ -1296,8 +1306,9 @@ elif opcion == "⚙️ Configuración":
         st.markdown("**Escudo / imagen secundaria**")
         st.caption("Puede ser el escudo, bandera u otra imagen institucional.")
         escudo_actual = inst.get("escudo_url", "") or ""
-        if escudo_actual and os.path.exists(os.path.join("assets", escudo_actual)):
-            st.image(os.path.join("assets", escudo_actual), width=140, caption="Escudo actual")
+        escudo_actual_src = obtener_url_o_ruta_imagen(escudo_actual)
+        if escudo_actual_src:
+            st.image(escudo_actual_src, width=140, caption="Escudo actual")
         else:
             st.caption("Sin escudo cargado actualmente.")
         archivo_escudo = st.file_uploader("Subir escudo / imagen secundaria",
@@ -1326,17 +1337,31 @@ elif opcion == "⚙️ Configuración":
         if not cfg_nombre.strip() or not cfg_dir.strip() or not cfg_mpio.strip() or not cfg_depto.strip():
             st.error("❌ Los campos marcados con * son obligatorios.")
         else:
-            os.makedirs("assets", exist_ok=True)
-            # Guardar logo si se subió
-            if archivo_logo is not None:
-                with open(os.path.join("assets", cfg_logo_url), "wb") as f:
-                    f.write(archivo_logo.getbuffer())
-            # Guardar escudo si se subió
-            if archivo_escudo is not None:
-                with open(os.path.join("assets", cfg_escudo_url), "wb") as f:
-                    f.write(archivo_escudo.getbuffer())
-
             with st.spinner("Guardando..."):
+                try:
+                    if archivo_logo is not None or archivo_escudo is not None:
+                        drive = DriveManager()
+                        carpeta_institucion = drive.obtener_carpeta_institucion()
+                        if archivo_logo is not None:
+                            ext_logo = archivo_logo.name.split(".")[-1].lower()
+                            cfg_logo_url = drive.subir_archivo_streamlit(
+                                archivo_logo,
+                                f"LOGO_INSTITUCION.{ext_logo}",
+                                carpeta_institucion,
+                                hacer_publico=True,
+                            )
+                        if archivo_escudo is not None:
+                            ext_escudo = archivo_escudo.name.split(".")[-1].lower()
+                            cfg_escudo_url = drive.subir_archivo_streamlit(
+                                archivo_escudo,
+                                f"ESCUDO_INSTITUCION.{ext_escudo}",
+                                carpeta_institucion,
+                                hacer_publico=True,
+                            )
+                except Exception as error_drive:
+                    st.error(f"❌ No se pudieron guardar las imágenes en Google Drive: {error_drive}")
+                    st.stop()
+
                 ok, msg = web_actualizar_institucion(
                     "INST-DICA",
                     cfg_nombre.strip(), cfg_nit.strip(), cfg_res.strip(),

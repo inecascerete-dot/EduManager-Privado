@@ -164,6 +164,35 @@ class DriveManager:
             supportsAllDrives=True,
         ).execute()
 
+    def subir_archivo_streamlit(
+        self,
+        archivo_streamlit,
+        nombre_archivo,
+        carpeta_id=None,
+        hacer_publico=False,
+    ):
+        """Sube un archivo recibido desde Streamlit y devuelve una URL persistente."""
+        extension = Path(archivo_streamlit.name).suffix
+        with NamedTemporaryFile(delete=False, suffix=extension) as temp:
+            temp.write(archivo_streamlit.getbuffer())
+            ruta_temporal = temp.name
+
+        try:
+            archivo = self.subir_archivo(ruta_temporal, nombre_archivo, carpeta_id)
+            if hacer_publico:
+                self.service.permissions().create(
+                    fileId=archivo["id"],
+                    body={"type": "anyone", "role": "reader"},
+                    supportsAllDrives=True,
+                ).execute()
+            return f"https://drive.google.com/uc?export=view&id={archivo['id']}"
+        finally:
+            if os.path.exists(ruta_temporal):
+                os.remove(ruta_temporal)
+
+    def obtener_carpeta_institucion(self):
+        return self.crear_carpeta("INSTITUCION")
+
     def buscar_carpeta(self, nombre_carpeta, carpeta_padre=None):
         service = self._require_service()
         padre = carpeta_padre or self.root_folder
