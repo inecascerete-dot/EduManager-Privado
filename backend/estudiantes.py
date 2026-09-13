@@ -40,30 +40,85 @@ from backend.utils import obtener_url_o_ruta_imagen
 
 
 def _activar_enter_formulario_estudiante():
-    """Permite avanzar con Enter por el orden del formulario de estudiante."""
+    """Permite avanzar con Enter por el orden visual/lógico del formulario."""
     components.html(
         """
         <script>
         (() => {
+            // El orden del DOM no coincide siempre con el orden visual de
+            // las columnas de Streamlit. Por eso se define explícitamente
+            // la secuencia que debe seguir la tecla Enter.
+            const ordenFormulario = [
+                "Tipo de Documento",
+                "Número de Documento",
+                "Departamento de Expedición (Filtro)",
+                "Municipio de Expedición",
+                "Primer Apellido",
+                "Segundo Apellido (Opcional)",
+                "Primer Nombre",
+                "Segundo Nombre (Opcional)",
+                "Fecha de Nacimiento",
+                "Género",
+                "Dirección de Residencia",
+                "Teléfono de Contacto",
+                "Estrato Socioeconómico",
+                "Departamento",
+                "Municipio",
+                "Barrio / Vereda",
+                "Grupo Sanguíneo y RH",
+                "Grupo Sisbén",
+                "EPS Asignada",
+                "Caracterización Poblacional"
+            ];
+
             const selectorCampos = [
                 "input[aria-label]:not([type='hidden']):not([type='file']):not([role='combobox'])",
                 "textarea[aria-label]",
                 "[role='combobox'][aria-label]"
             ].join(",");
 
-            const camposVisibles = () => {
-                const raiz = window.parent.document.querySelector(
+            const obtenerRaiz = () => window.parent.document.querySelector(
                     "[data-testid='stAppViewContainer']"
                 ) || window.parent.document.body;
 
+            const normalizar = (texto) => (texto || "")
+                .replaceAll("*", "")
+                .split(" ")
+                .filter(Boolean)
+                .join(" ")
+                .trim()
+                .toLocaleLowerCase();
+
+            const campoVisible = (campo) => {
+                const rect = campo.getBoundingClientRect();
+                return !campo.disabled && rect.width > 0 && rect.height > 0;
+            };
+
+            const camposVisibles = () => {
+                const raiz = obtenerRaiz();
+
                 return Array.from(raiz.querySelectorAll(selectorCampos)).filter((campo) => {
-                    const rect = campo.getBoundingClientRect();
-                    return !campo.disabled && rect.width > 0 && rect.height > 0;
+                    return campoVisible(campo);
+                });
+            };
+
+            const buscarCampo = (etiqueta) => {
+                const etiquetaNormalizada = normalizar(etiqueta);
+                return camposVisibles().find((campo) => {
+                    const ariaLabel = normalizar(campo.getAttribute("aria-label"));
+                    return ariaLabel === etiquetaNormalizada
+                        || ariaLabel.includes(etiquetaNormalizada)
+                        || etiquetaNormalizada.includes(ariaLabel);
                 });
             };
 
             const instalar = () => {
-                camposVisibles().forEach((campo) => {
+                ordenFormulario.forEach((etiqueta, posicion) => {
+                    const campo = buscarCampo(etiqueta);
+                    if (!campo) {
+                        return;
+                    }
+
                     if (campo.dataset.enterFormularioInstalado === "1") {
                         return;
                     }
@@ -74,9 +129,7 @@ def _activar_enter_formulario_estudiante():
                             return;
                         }
 
-                        const campos = camposVisibles();
-                        const posicion = campos.indexOf(campo);
-                        const siguiente = posicion >= 0 ? campos[posicion + 1] : null;
+                        const siguiente = buscarCampo(ordenFormulario[posicion + 1]);
 
                         if (!siguiente) {
                             return;
