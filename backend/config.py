@@ -3,6 +3,17 @@
 # ==========================================
 
 from pathlib import Path
+import os
+
+import streamlit as st
+
+
+def obtener_configuracion(nombre, predeterminado=None):
+    """Lee configuración desde Streamlit Secrets o variables de entorno."""
+    valor = st.secrets.get(nombre)
+    if valor not in (None, ""):
+        return valor
+    return os.getenv(nombre, predeterminado)
 
 # ==========================================
 # RUTAS DEL PROYECTO

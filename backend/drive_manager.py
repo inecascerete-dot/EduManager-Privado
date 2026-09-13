@@ -2,10 +2,12 @@ import json
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from collections.abc import Mapping
 
 import streamlit as st
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -14,6 +16,8 @@ from backend.config import (
     GOOGLE_DESKTOP_CLIENT,
     GOOGLE_TOKEN,
     GOOGLE_DRIVE_ROOT,
+    GOOGLE_CREDENTIALS,
+    obtener_configuracion,
 )
 
 
@@ -25,8 +29,25 @@ class DriveManager:
 
     def __init__(self):
         self.service = None
-        self.root_folder = GOOGLE_DRIVE_ROOT
+        self.root_folder = str(
+            obtener_configuracion("GOOGLE_DRIVE_ROOT", GOOGLE_DRIVE_ROOT)
+        ).strip()
+        self.auth_mode = None
         self.autenticar()
+
+    @staticmethod
+    def _secreto_json(nombre):
+        """Devuelve un secreto JSON como dict, tanto si llega como texto como tabla TOML."""
+        valor = obtener_configuracion(nombre)
+        if isinstance(valor, Mapping):
+            return dict(valor)
+        if isinstance(valor, str) and valor.strip():
+            try:
+                resultado = json.loads(valor)
+                return resultado if isinstance(resultado, dict) else None
+            except json.JSONDecodeError:
+                return None
+        return None
 
     def autenticar(self):
         """Carga credenciales desde Secrets o desde archivos locales.
@@ -37,13 +58,42 @@ class DriveManager:
         """
         creds = None
 
-        token_json = st.secrets.get("GOOGLE_TOKEN_JSON")
-        if token_json:
+        # En un servidor es preferible una cuenta de servicio. La carpeta raíz
+        # debe estar compartida con el correo de esa cuenta con permiso de editor.
+        service_account_info = self._secreto_json("GOOGLE_SERVICE_ACCOUNT_JSON")
+        if service_account_info:
             try:
-                token_info = json.loads(token_json)
-                creds = Credentials.from_authorized_user_info(token_info, SCOPES)
-            except (TypeError, ValueError, json.JSONDecodeError):
+                creds = service_account.Credentials.from_service_account_info(
+                    service_account_info,
+                    scopes=SCOPES,
+                )
+                self.auth_mode = "service_account"
+            except (TypeError, ValueError, KeyError):
                 creds = None
+
+        if creds is None and Path(GOOGLE_CREDENTIALS).exists():
+            try:
+                creds = service_account.Credentials.from_service_account_file(
+                    str(GOOGLE_CREDENTIALS),
+                    scopes=SCOPES,
+                )
+                self.auth_mode = "service_account_file"
+            except (TypeError, ValueError, OSError):
+                creds = None
+
+        token_json = obtener_configuracion("GOOGLE_TOKEN_JSON")
+        if creds is None and token_json:
+            try:
+                token_info = (
+                    dict(token_json)
+                    if isinstance(token_json, Mapping)
+                    else json.loads(token_json)
+                )
+                creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+                self.auth_mode = "oauth_token"
+            except (TypeError, ValueError, json.JSONDecodeError):
+                if self.auth_mode is None:
+                    creds = None
 
         if creds is None and Path(GOOGLE_TOKEN).exists():
             try:
@@ -61,7 +111,7 @@ class DriveManager:
                 creds = None
 
         if not creds or not creds.valid:
-            permitir_oauth_local = st.secrets.get("GOOGLE_ALLOW_LOCAL_OAUTH", True)
+            permitir_oauth_local = obtener_configuracion("GOOGLE_ALLOW_LOCAL_OAUTH", True)
             if permitir_oauth_local and Path(GOOGLE_DESKTOP_CLIENT).exists():
                 try:
                     flow = InstalledAppFlow.from_client_secrets_file(
@@ -69,6 +119,7 @@ class DriveManager:
                         SCOPES,
                     )
                     creds = flow.run_local_server(port=0)
+                    self.auth_mode = "oauth_local"
                     Path(GOOGLE_TOKEN).parent.mkdir(parents=True, exist_ok=True)
                     Path(GOOGLE_TOKEN).write_text(creds.to_json(), encoding="utf-8")
                 except Exception:
@@ -81,10 +132,22 @@ class DriveManager:
         self.service = build("drive", "v3", credentials=creds)
         return True
 
+    def probar_conexion(self):
+        """Valida que la carpeta raíz exista y sea accesible con las credenciales."""
+        service = self._require_service()
+        if not self.root_folder:
+            raise RuntimeError("GOOGLE_DRIVE_ROOT no está configurado.")
+        return service.files().get(
+            fileId=self.root_folder,
+            fields="id,name,mimeType,trashed",
+            supportsAllDrives=True,
+        ).execute()
+
     def _require_service(self):
         if self.service is None:
             raise RuntimeError(
-                "Google Drive no está configurado. Configure GOOGLE_TOKEN_JSON "
+                "Google Drive no está configurado. Configure "
+                "GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_TOKEN_JSON "
                 "en los Secrets de Streamlit."
             )
         return self.service
@@ -98,6 +161,7 @@ class DriveManager:
             body=metadata,
             media_body=media,
             fields="id,name,webViewLink",
+            supportsAllDrives=True,
         ).execute()
 
     def buscar_carpeta(self, nombre_carpeta, carpeta_padre=None):
@@ -112,6 +176,9 @@ class DriveManager:
         resultados = service.files().list(
             q=consulta,
             fields="files(id,name)",
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            corpora="allDrives",
         ).execute()
         carpetas = resultados.get("files", [])
         return carpetas[0]["id"] if carpetas else None
@@ -130,6 +197,7 @@ class DriveManager:
         carpeta = service.files().create(
             body=metadata,
             fields="id,name",
+            supportsAllDrives=True,
         ).execute()
         return carpeta["id"]
 
@@ -159,6 +227,7 @@ class DriveManager:
             service.permissions().create(
                 fileId=archivo["id"],
                 body={"type": "anyone", "role": "reader"},
+                supportsAllDrives=True,
             ).execute()
             archivo = service.files().get(
                 fileId=archivo["id"],
@@ -168,3 +237,11 @@ class DriveManager:
         finally:
             if os.path.exists(ruta_temporal):
                 os.remove(ruta_temporal)
+
+if __name__ == "__main__":
+    print("Iniciando autenticación con Google Drive...")
+    manager = DriveManager()
+    if manager.service:
+        print("¡Autenticación exitosa! El archivo token.json se ha creado correctamente.")
+    else:
+        print("No se pudo completar la autenticación.")
