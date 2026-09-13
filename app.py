@@ -3372,10 +3372,3 @@ elif opcion == "📄 Boletines":
                     key=f"dl_ind_{_ctx_b}_{id_mat}",
                     use_container_width=True,
                 )
-from backend.drive_manager import DriveManager
-
-drive = DriveManager()
-
-print("===================================")
-print("GOOGLE DRIVE CONECTADO")
-print("===================================")
