@@ -61,10 +61,10 @@ def autenticar(self):
             # Leemos el JSON seguro configurado en la nube
             client_config = json.loads(st.secrets["GOOGLE_CLIENT_SECRETS_JSON"])
             
-            flow = InstalledAppFlow.from_client_secrets_info(
-                client_config, 
-                SCOPES
-            )
+            flow = InstalledAppFlow.from_client_config(
+            client_config, 
+            SCOPES
+        )
             
             # ADVERTENCIA: flow.run_local_server() no funciona en la nube porque requiere navegador.
             # En entorno de producción web, se requiere un flujo de credenciales pre-autorizadas o Service Account.
