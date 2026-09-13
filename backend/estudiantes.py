@@ -73,6 +73,7 @@ def _activar_enter_formulario_estudiante():
 
             const selectorCampos = [
                 "input[aria-label]:not([type='hidden']):not([type='file']):not([role='combobox'])",
+                "input[data-testid='stDateInputField']",
                 "textarea[aria-label]",
                 "[role='combobox'][aria-label]"
             ].join(",");
@@ -104,12 +105,39 @@ def _activar_enter_formulario_estudiante():
 
             const buscarCampo = (etiqueta) => {
                 const etiquetaNormalizada = normalizar(etiqueta);
-                return camposVisibles().find((campo) => {
+                const candidatos = camposVisibles();
+                const campoExacto = candidatos.find((campo) => {
                     const ariaLabel = normalizar(campo.getAttribute("aria-label"));
-                    return ariaLabel === etiquetaNormalizada
-                        || ariaLabel.includes(etiquetaNormalizada)
-                        || etiquetaNormalizada.includes(ariaLabel);
+                    return ariaLabel === etiquetaNormalizada;
                 });
+
+                if (campoExacto) {
+                    return campoExacto;
+                }
+
+                if (etiquetaNormalizada === "fecha de nacimiento") {
+                    const campoFecha = candidatos.find((campo) =>
+                        campo.getAttribute("data-testid") === "stDateInputField"
+                    );
+                    if (campoFecha) {
+                        return campoFecha;
+                    }
+                }
+
+                return candidatos.find((campo) => {
+                    const ariaLabel = normalizar(campo.getAttribute("aria-label"));
+                    return ariaLabel.startsWith(`${etiquetaNormalizada} `);
+                });
+            };
+
+            const buscarSiguienteCampo = (posicionActual) => {
+                for (let posicion = posicionActual + 1; posicion < ordenFormulario.length; posicion += 1) {
+                    const siguiente = buscarCampo(ordenFormulario[posicion]);
+                    if (siguiente) {
+                        return siguiente;
+                    }
+                }
+                return null;
             };
 
             const instalar = () => {
@@ -129,7 +157,10 @@ def _activar_enter_formulario_estudiante():
                             return;
                         }
 
-                        const siguiente = buscarCampo(ordenFormulario[posicion + 1]);
+                        // Si un campo opcional no está renderizado (por
+                        // ejemplo, Barrio/Vereda sin sectores), se salta al
+                        // siguiente campo disponible.
+                        const siguiente = buscarSiguienteCampo(posicion);
 
                         if (!siguiente) {
                             return;
