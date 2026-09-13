@@ -45,64 +45,47 @@ def _activar_enter_formulario_estudiante():
         """
         <script>
         (() => {
-            const labels = [
-                "Tipo de Documento*",
-                "Número de Documento*",
-                "Departamento de Expedición (Filtro)*",
-                "Municipio de Expedición*",
-                "Primer Apellido*",
-                "Segundo Apellido (Opcional)",
-                "Primer Nombre*",
-                "Segundo Nombre (Opcional)",
-                "Fecha de Nacimiento",
-                "Dirección de Residencia*",
-                "Estrato Socioeconómico*",
-                "Género*",
-                "Teléfono de Contacto*",
-                "Departamento*",
-                "Municipio*",
-                "Barrio / Vereda*",
-                "Grupo Sanguíneo y RH*",
-                "Grupo Sisbén (Ej: A1, B3, C2)*",
-                "EPS Asignada*",
-                "Caracterización Poblacional*"
-            ];
+            const selectorCampos = [
+                "input[aria-label]:not([type='hidden']):not([type='file']):not([role='combobox'])",
+                "textarea[aria-label]",
+                "[role='combobox'][aria-label]"
+            ].join(",");
 
-            const normalizar = (texto) => (texto || "")
-                .replace(/\\s+/g, " ")
-                .trim();
+            const camposVisibles = () => {
+                const raiz = window.parent.document.querySelector(
+                    "[data-testid='stAppViewContainer']"
+                ) || window.parent.document.body;
 
-            const buscarCampo = (label) => Array.from(
-                window.parent.document.querySelectorAll(
-                    "input[aria-label], textarea[aria-label], [role='combobox'][aria-label]"
-                )
-            ).find((elemento) =>
-                normalizar(elemento.getAttribute("aria-label")) === normalizar(label)
-            );
+                return Array.from(raiz.querySelectorAll(selectorCampos)).filter((campo) => {
+                    const rect = campo.getBoundingClientRect();
+                    return !campo.disabled && rect.width > 0 && rect.height > 0;
+                });
+            };
 
             const instalar = () => {
-                labels.forEach((label, index) => {
-                    const input = buscarCampo(label);
-
-                    if (!input || input.dataset.enterNombresInstalado === "1") {
+                camposVisibles().forEach((campo) => {
+                    if (campo.dataset.enterFormularioInstalado === "1") {
                         return;
                     }
 
-                    input.dataset.enterNombresInstalado = "1";
-                    input.addEventListener("keydown", (evento) => {
-                        if (evento.key !== "Enter" || index >= labels.length - 1) {
+                    campo.dataset.enterFormularioInstalado = "1";
+                    campo.addEventListener("keydown", (evento) => {
+                        if (evento.key !== "Enter") {
+                            return;
+                        }
+
+                        const campos = camposVisibles();
+                        const posicion = campos.indexOf(campo);
+                        const siguiente = posicion >= 0 ? campos[posicion + 1] : null;
+
+                        if (!siguiente) {
                             return;
                         }
 
                         evento.preventDefault();
                         evento.stopPropagation();
-
-                        const siguiente = buscarCampo(labels[index + 1]);
-
-                        if (siguiente) {
-                            siguiente.focus();
-                            siguiente.scrollIntoView({block: "center", behavior: "smooth"});
-                        }
+                        siguiente.focus();
+                        siguiente.scrollIntoView({block: "center", behavior: "smooth"});
                     }, true);
                 });
             };
