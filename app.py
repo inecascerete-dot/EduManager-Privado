@@ -151,6 +151,10 @@ if st.session_state.usuario is None:
         password = st.text_input("Contraseña", type="password")
         boton_ingresar = st.form_submit_button("Ingresar")
 
+    # Evita que Enter en Usuario envíe prematuramente el formulario.
+    # Enter en Contraseña sí activa el botón de ingreso.
+    activar_navegacion_enter(["Usuario", "Contraseña"], boton_final="Ingresar")
+
     if boton_ingresar:
 
         ok, resultado = autenticar_usuario(
