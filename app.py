@@ -15,7 +15,10 @@ from backend.db_manager import (
     web_obtener_grados_con_detalle,
     formatear_nombre_grupo
     )
-from backend.estudiantes import mostrar_busqueda_estudiantes
+from backend.estudiantes import (
+    mostrar_busqueda_estudiantes,
+    mostrar_formulario_estudiante,
+)
 
 from backend.institucion_db import(
         web_obtener_institucion,
@@ -1201,7 +1204,7 @@ elif opcion == "🔎 Consultar Personal":
 
 # --- 🆕 PANTALLA: REGISTRAR ESTUDIANTE ---
 elif opcion == "🆕 Registrar Estudiante":
-    mostrar_busqueda_estudiantes()
+    mostrar_formulario_estudiante(modo="nuevo")
 
 
 # --- 🆕 PANTALLA: REGISTRAR ACUDIENTE ---
