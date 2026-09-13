@@ -1412,10 +1412,10 @@ elif opcion == "🆕 Registrar Personal":
     boton_guardar_per = st.button("💾 Guardar Registro Personal", use_container_width=True)
     activar_navegacion_enter([
         "Código Interno Único",
-        "Nombres Completos",
-        "Cargo / Rol Institucional",
         "Número de Documento",
+        "Nombres Completos",
         "Apellidos Completos",
+        "Cargo / Rol Institucional",
         "Teléfono / Celular de Contacto",
         "Correo Electrónico",
         "Tipo de Vinculación",

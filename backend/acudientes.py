@@ -272,10 +272,10 @@ def mostrar_formulario_acudiente(modo="nuevo"):
             "Departamento de nacimiento",
             "Municipio de nacimiento",
             "Teléfono Principal",
-            "Dirección de Residencia",
-            "Barrio / Vereda / Corregimiento",
             "Correo Electrónico",
+            "Dirección de Residencia",
             "Ocupación",
+            "Barrio / Vereda / Corregimiento",
             "Observaciones",
         ])
 

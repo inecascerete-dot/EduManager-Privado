@@ -95,7 +95,16 @@ def activar_navegacion_enter(etiquetas, boton_final=None):
                             if (boton) {{
                                 evento.preventDefault();
                                 evento.stopPropagation();
-                                boton.click();
+                                // Esperar a que Streamlit registre el último
+                                // carácter escrito en el campo de contraseña.
+                                window.setTimeout(() => {{
+                                    const botonActual = Array.from(
+                                        obtenerRaiz().querySelectorAll("button")
+                                    ).find((elemento) =>
+                                        elemento.innerText.trim() === textoBotonFinal
+                                    );
+                                    if (botonActual) botonActual.click();
+                                }}, 200);
                             }}
                         }}
                     }}, true);
