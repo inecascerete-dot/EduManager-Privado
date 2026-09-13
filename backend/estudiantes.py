@@ -66,8 +66,8 @@ def _activar_enter_formulario_estudiante():
                 "Municipio",
                 "Barrio / Vereda",
                 "Grupo Sanguíneo y RH",
-                "Grupo Sisbén",
                 "EPS Asignada",
+                "Grupo Sisbén",
                 "Caracterización Poblacional"
             ];
 

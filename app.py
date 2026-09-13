@@ -27,6 +27,7 @@ from backend.acudientes import (
     mostrar_acudientes,
     
     )
+from backend.form_navigation import activar_navegacion_enter
 from backend.acudientes_editar import (
         mostrar_edicion_acudiente
     )
@@ -149,7 +150,10 @@ if st.session_state.usuario is None:
         type="password"
     )
 
-    if st.button("Ingresar"):
+    boton_ingresar = st.button("Ingresar")
+    activar_navegacion_enter(["Usuario", "Contraseña"], boton_final="Ingresar")
+
+    if boton_ingresar:
 
         ok, resultado = autenticar_usuario(
         usuario,
@@ -1406,6 +1410,20 @@ elif opcion == "🆕 Registrar Personal":
     
     # 💾 BOTÓN DE GUARDADO AL FINAL
     boton_guardar_per = st.button("💾 Guardar Registro Personal", use_container_width=True)
+    activar_navegacion_enter([
+        "Código Interno Único",
+        "Nombres Completos",
+        "Cargo / Rol Institucional",
+        "Número de Documento",
+        "Apellidos Completos",
+        "Teléfono / Celular de Contacto",
+        "Correo Electrónico",
+        "Tipo de Vinculación",
+        "Decreto de Nombramiento",
+        "Grado de Escalafón",
+        "Estado Laboral Actual",
+        "Fecha de Cambio de Estado",
+    ])
 
     # 🔄 PROCESAMIENTO Y ESCRITURA FÍSICA
     if boton_guardar_per:

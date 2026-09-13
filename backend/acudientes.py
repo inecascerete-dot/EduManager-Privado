@@ -18,6 +18,7 @@ from backend.acudientes_db import (
     web_obtener_documentos_acudiente,
     web_guardar_documento_acudiente
 )
+from backend.form_navigation import activar_navegacion_enter
 
 def cargar_catalogos_acudiente(id_departamento=None):
     """Carga todos los catálogos utilizados por el módulo de acudientes."""
@@ -258,6 +259,25 @@ def mostrar_formulario_acudiente(modo="nuevo"):
         st.text_input("Correo Electrónico", key="reg_acu_correo", disabled=not edit_mode)
         st.text_input("Ocupación", key="reg_acu_ocupacion", disabled=not edit_mode)
         st.text_area("Observaciones", height=80, key="reg_acu_obs", disabled=not edit_mode)
+
+    if edit_mode:
+        activar_navegacion_enter([
+            "Tipo de documento",
+            "Número de documento",
+            "Primer nombre",
+            "Segundo nombre",
+            "Primer apellido",
+            "Segundo apellido",
+            "Fecha de nacimiento",
+            "Departamento de nacimiento",
+            "Municipio de nacimiento",
+            "Teléfono Principal",
+            "Dirección de Residencia",
+            "Barrio / Vereda / Corregimiento",
+            "Correo Electrónico",
+            "Ocupación",
+            "Observaciones",
+        ])
 
     st.info("💡 El parentesco (mamá, papá, tío…) se registra en la matrícula, ya que puede cambiar cada año lectivo.")
 
