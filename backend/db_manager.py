@@ -64,6 +64,18 @@ class _ConexionDelPool:
 @st.cache_resource(show_spinner=False)
 def obtener_pool_conexiones():
     """Crea un pool por proceso de Streamlit y lo reutiliza entre reruns."""
+    database_url = obtener_configuracion("DATABASE_URL")
+    if database_url:
+        minconn = int(obtener_configuracion("DB_POOL_MINCONN", 1))
+        maxconn = int(obtener_configuracion("DB_POOL_MAXCONN", 5))
+        if minconn < 1 or maxconn < minconn:
+            raise ValueError("DB_POOL_MINCONN/DB_POOL_MAXCONN tienen valores inválidos")
+        return psycopg2_pool.ThreadedConnectionPool(
+            minconn,
+            maxconn,
+            database_url,
+        )
+
     minconn = int(obtener_configuracion("DB_POOL_MINCONN", 1))
     maxconn = int(obtener_configuracion("DB_POOL_MAXCONN", 5))
     if minconn < 1 or maxconn < minconn:
